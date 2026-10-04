@@ -4,6 +4,7 @@
 """
 import os
 import json
+import urllib.parse
 from typing import Optional, List
 from fastapi import FastAPI, Request, Depends, Form, HTTPException, status, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -46,40 +47,45 @@ app = FastAPI(
     redirect_slashes=False
 )
 
-# ASGI 수준 경로 정규화 미들웨어 (Vercel Serverless 프록시 /api 프리픽스 보정)
+# ASGI 수준 경로 정규화 미들웨어 (Vercel Serverless 프록시 /api 프리픽스 및 __path__ 쿼리 보정)
 class VercelPathNormalizerMiddleware:
     """
-    Vercel Serverless 환경에서 프록시나 리라이트로 인해 /api 또는 /api/index.py 프리픽스가 붙은 경로를
-    FastAPI 라우터 진입 전 순수 루트 경로(/)로 정규화합니다.
-    또한 Vercel rewrites에 의해 변환되기 전 원본 브라우저 경로(x-matched-path 또는 x-forwarded-path)가
-    있을 경우 이를 우선 적용하여 서브페이지 라우팅을 완벽 보장합니다.
+    Vercel Serverless 환경에서 프록시나 리라이트로 인해 전달되는 경로를 완벽히 정규화합니다.
+    1. Vercel rewrite 쿼리 스트링(__path__)에 담겨 전달된 실제 브라우저 경로 복원
+    2. 프록시 헤더(x-matched-path, x-forwarded-path) 검사
+    3. /api, /api/index.py 프리픽스 제거 후 순수 내부 라우트 경로(/students, /counseling 등)로 변환
     """
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
-            headers = dict(scope.get("headers", []))
-            original_path = None
-            for h in (b"x-matched-path", b"x-forwarded-path", b"x-invoke-path"):
-                if h in headers:
-                    val = headers[h].decode("utf-8", errors="ignore").split("?")[0]
-                    if val and not val.startswith("/api/index.py"):
-                        original_path = val
+            query_string = scope.get("query_string", b"").decode("utf-8", errors="ignore")
+            qs_dict = urllib.parse.parse_qs(query_string, keep_blank_values=True)
+            
+            # Vercel rewrites: /api/index.py?__path__=/$1
+            if "__path__" in qs_dict:
+                real_path = qs_dict.pop("__path__")[0]
+                if not real_path.startswith("/"):
+                    real_path = "/" + real_path
+                # 정규화된 실제 라우트 경로를 scope에 설정
+                scope["path"] = real_path
+                # __path__ 파라미터를 제거하여 원본 쿼리 스트링 복원
+                new_qs = urllib.parse.urlencode(qs_dict, doseq=True)
+                scope["query_string"] = new_qs.encode("utf-8")
+            else:
+                path = scope.get("path", "/")
+                for prefix in ("/api/index.py", "/api/index", "/api"):
+                    if path == prefix:
+                        path = "/"
+                        break
+                    elif path.startswith(prefix + "/"):
+                        path = path[len(prefix):]
                         break
 
-            path = original_path or scope.get("path", "/")
-            for prefix in ("/api/index.py", "/api/index", "/api"):
-                if path == prefix:
-                    path = "/"
-                    break
-                elif path.startswith(prefix + "/"):
-                    path = path[len(prefix):]
-                    break
-
-            if not path or not path.startswith("/"):
-                path = "/" + (path or "")
-            scope["path"] = path
+                if not path or not path.startswith("/"):
+                    path = "/" + (path or "")
+                scope["path"] = path
 
         await self.app(scope, receive, send)
 
@@ -245,6 +251,29 @@ async def students_directory_view(
             "selected_student_id": "LGS-220814"
         }
     )
+
+
+# 학생 상세 기본 라우트 (학업/성적으로 리다이렉트)
+@app.get("/students/{student_id}")
+async def student_root_redirect(student_id: str):
+    return RedirectResponse(url=f"/students/{student_id}/academic", status_code=status.HTTP_302_FOUND)
+
+
+# 네비게이션 편의 라우트 (기본 대표 학생 LGS-220814로 안내)
+@app.get("/counseling")
+async def counseling_shortcut_redirect():
+    return RedirectResponse(url="/students/LGS-220814/counseling", status_code=status.HTTP_302_FOUND)
+
+
+@app.get("/academic")
+async def academic_shortcut_redirect():
+    return RedirectResponse(url="/students/LGS-220814/academic", status_code=status.HTTP_302_FOUND)
+
+
+@app.get("/ecs")
+@app.get("/passion-projects")
+async def ecs_shortcut_redirect():
+    return RedirectResponse(url="/students/LGS-220814/ecs", status_code=status.HTTP_302_FOUND)
 
 
 # ==========================================================
