@@ -32,9 +32,14 @@ elif is_serverless:
     # Vercel 환경에서는 쓰기 가능한 임시 디렉토리(/tmp)로 SQLite DB 복사
     tmp_dir = tempfile.gettempdir()
     tmp_db = os.path.join(tmp_dir, "lccs.db")
-    local_db = os.path.join(BASE_DIR, "lccs.db")
+    possible_local_dbs = [
+        os.path.join(BASE_DIR, "lccs.db"),
+        os.path.abspath("lccs.db"),
+        os.path.join(os.getcwd(), "lccs.db"),
+    ]
+    local_db = next((p for p in possible_local_dbs if os.path.exists(p)), None)
     try:
-        if not os.path.exists(tmp_db) and os.path.exists(local_db):
+        if not os.path.exists(tmp_db) and local_db:
             shutil.copyfile(local_db, tmp_db)
     except Exception as e:
         print(f"Warning copying SQLite to temp: {e}")

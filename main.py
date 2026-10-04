@@ -48,8 +48,13 @@ app = FastAPI(
 # 세션 미들웨어 등록 (세션 기반 Google SSO 상태 및 RBAC 역할 유지)
 app.add_middleware(SessionMiddleware, secret_key="lighthouse-college-secret-key-2026")
 
-# 템플릿 엔진 설정 (절대 경로 기반 탐색 보장)
-templates_dir = os.path.join(BASE_DIR, "templates")
+# 템플릿 엔진 설정 (다중 경로 탐색 보장)
+possible_template_dirs = [
+    os.path.join(BASE_DIR, "templates"),
+    os.path.abspath("templates"),
+    os.path.join(os.getcwd(), "templates"),
+]
+templates_dir = next((d for d in possible_template_dirs if os.path.isdir(d)), os.path.join(BASE_DIR, "templates"))
 templates = Jinja2Templates(directory=templates_dir)
 
 # 디자인 정적 에셋 마운트 (있는 경우)
