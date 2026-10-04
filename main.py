@@ -42,8 +42,19 @@ except Exception as e:
 app = FastAPI(
     title="Lighthouse College System (LCS)",
     description="등대글로벌스쿨 진학 지도 및 누적 포트폴리오 관리 포털",
-    version="1.0.0"
+    version="1.0.0",
+    redirect_slashes=False
 )
+
+# Vercel Serverless 경로 보정 미들웨어 (Vercel 프록시가 /api/index.py로 전달하는 경우 대응)
+@app.middleware("http")
+async def fix_vercel_path(request: Request, call_next):
+    path = request.scope.get("path", "/")
+    if path in ["/api/index.py", "/api", "/api/"]:
+        request.scope["path"] = "/"
+    elif path.startswith("/api/index.py/"):
+        request.scope["path"] = path.replace("/api/index.py", "", 1)
+    return await call_next(request)
 
 # 세션 미들웨어 등록 (세션 기반 Google SSO 상태 및 RBAC 역할 유지)
 app.add_middleware(SessionMiddleware, secret_key="lighthouse-college-secret-key-2026")
