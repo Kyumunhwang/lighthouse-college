@@ -46,15 +46,44 @@ app = FastAPI(
     redirect_slashes=False
 )
 
-# Vercel Serverless 경로 보정 미들웨어 (Vercel 프록시가 /api/index.py로 전달하는 경우 대응)
-@app.middleware("http")
-async def fix_vercel_path(request: Request, call_next):
-    path = request.scope.get("path", "/")
-    if path in ["/api/index.py", "/api", "/api/"]:
-        request.scope["path"] = "/"
-    elif path.startswith("/api/index.py/"):
-        request.scope["path"] = path.replace("/api/index.py", "", 1)
-    return await call_next(request)
+# ASGI 수준 경로 정규화 미들웨어 (Vercel Serverless 프록시 /api 프리픽스 보정)
+class VercelPathNormalizerMiddleware:
+    """
+    Vercel Serverless 환경에서 프록시나 리라이트로 인해 /api 또는 /api/index.py 프리픽스가 붙은 경로를
+    FastAPI 라우터 진입 전 순수 루트 경로(/)로 정규화합니다.
+    또한 Vercel rewrites에 의해 변환되기 전 원본 브라우저 경로(x-matched-path 또는 x-forwarded-path)가
+    있을 경우 이를 우선 적용하여 서브페이지 라우팅을 완벽 보장합니다.
+    """
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers", []))
+            original_path = None
+            for h in (b"x-matched-path", b"x-forwarded-path", b"x-invoke-path"):
+                if h in headers:
+                    val = headers[h].decode("utf-8", errors="ignore").split("?")[0]
+                    if val and not val.startswith("/api/index.py"):
+                        original_path = val
+                        break
+
+            path = original_path or scope.get("path", "/")
+            for prefix in ("/api/index.py", "/api/index", "/api"):
+                if path == prefix:
+                    path = "/"
+                    break
+                elif path.startswith(prefix + "/"):
+                    path = path[len(prefix):]
+                    break
+
+            if not path or not path.startswith("/"):
+                path = "/" + (path or "")
+            scope["path"] = path
+
+        await self.app(scope, receive, send)
+
+app.add_middleware(VercelPathNormalizerMiddleware)
 
 # 세션 미들웨어 등록 (세션 기반 Google SSO 상태 및 RBAC 역할 유지)
 app.add_middleware(SessionMiddleware, secret_key="lighthouse-college-secret-key-2026")
@@ -153,6 +182,20 @@ async def dashboard_view(
             "selected_student_id": "LGS-220814"
         }
     )
+
+
+# Vercel 프록시 및 Serverless Function 직접 호출 대비 라우트 별칭 등록
+@app.get("/api", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/api/", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/api/index.py", response_class=HTMLResponse, include_in_schema=False)
+async def vercel_api_fallback(
+    request: Request,
+    grade: str = "ALL",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Vercel Serverless Function 직접 접근 시 대시보드로 자동 연결"""
+    return await dashboard_view(request=request, grade=grade, db=db, current_user=current_user)
 
 
 # ==========================================================
