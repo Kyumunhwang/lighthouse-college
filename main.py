@@ -31,8 +31,13 @@ from auth import (
 )
 from skills import ProfileSkill, ECSkill, CounselingSkill
 
-# 데이터베이스 테이블 초기화
-Base.metadata.create_all(bind=engine)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 데이터베이스 테이블 안전 초기화
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Database schema init notice: {e}")
 
 app = FastAPI(
     title="Lighthouse College System (LCS)",
@@ -43,12 +48,14 @@ app = FastAPI(
 # 세션 미들웨어 등록 (세션 기반 Google SSO 상태 및 RBAC 역할 유지)
 app.add_middleware(SessionMiddleware, secret_key="lighthouse-college-secret-key-2026")
 
-# 템플릿 엔진 설정
-templates = Jinja2Templates(directory="templates")
+# 템플릿 엔진 설정 (절대 경로 기반 탐색 보장)
+templates_dir = os.path.join(BASE_DIR, "templates")
+templates = Jinja2Templates(directory=templates_dir)
 
 # 디자인 정적 에셋 마운트 (있는 경우)
-if os.path.exists("design"):
-    app.mount("/design", StaticFiles(directory="design"), name="design")
+design_dir = os.path.join(BASE_DIR, "design")
+if os.path.exists(design_dir):
+    app.mount("/design", StaticFiles(directory=design_dir), name="design")
 
 
 def get_global_stats(db: Session) -> dict:

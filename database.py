@@ -1,15 +1,26 @@
 """
 데이터베이스 설정 모듈 (Database Configuration)
 SQLite 데이터베이스 연결 및 ORM 세션 팩토리를 구성합니다.
-Vercel 서버리스 배포 환경(/tmp 파일시스템 및 외부 DATABASE_URL)을 자동 지원합니다.
+Vercel/AWS Lambda 서버리스 환경(/tmp)과 로컬 환경을 모두 완벽 지원합니다.
 """
 import os
 import shutil
+import tempfile
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# Vercel 서버리스 환경 대응: 읽기 전용 파일시스템 우회
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Vercel, AWS Lambda, 또는 읽기 전용 샌드박스 환경 감지
+is_serverless = (
+    any(os.environ.get(k) for k in [
+        "VERCEL", "VERCEL_ENV", "NOW_REGION",
+        "AWS_LAMBDA_FUNCTION_NAME", "LAMBDA_TASK_ROOT"
+    ])
+    or not os.access(BASE_DIR, os.W_OK)
+)
+
 if os.environ.get("DATABASE_URL"):
     # 외부 Postgres 등 연결 (e.g. Neon, Supabase)
     db_url = os.environ.get("DATABASE_URL")
@@ -17,16 +28,24 @@ if os.environ.get("DATABASE_URL"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     SQLALCHEMY_DATABASE_URL = db_url
     connect_args = {}
-elif os.environ.get("VERCEL"):
-    # Vercel 환경에서는 쓰기 가능한 /tmp 디렉토리로 SQLite 복사
-    tmp_db = "/tmp/lccs.db"
-    if not os.path.exists(tmp_db) and os.path.exists("./lccs.db"):
-        shutil.copyfile("./lccs.db", tmp_db)
-    SQLALCHEMY_DATABASE_URL = f"sqlite:///{tmp_db}"
+elif is_serverless:
+    # Vercel 환경에서는 쓰기 가능한 임시 디렉토리(/tmp)로 SQLite DB 복사
+    tmp_dir = tempfile.gettempdir()
+    tmp_db = os.path.join(tmp_dir, "lccs.db")
+    local_db = os.path.join(BASE_DIR, "lccs.db")
+    try:
+        if not os.path.exists(tmp_db) and os.path.exists(local_db):
+            shutil.copyfile(local_db, tmp_db)
+    except Exception as e:
+        print(f"Warning copying SQLite to temp: {e}")
+    
+    norm_path = tmp_db.replace("\\", "/")
+    SQLALCHEMY_DATABASE_URL = f"sqlite:///{norm_path}"
     connect_args = {"check_same_thread": False}
 else:
     # 로컬 개발 환경
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./lccs.db"
+    local_path = os.path.join(BASE_DIR, "lccs.db").replace("\\", "/")
+    SQLALCHEMY_DATABASE_URL = f"sqlite:///{local_path}"
     connect_args = {"check_same_thread": False}
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
