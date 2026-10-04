@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Sensitive Data Files (개인정보 보호를 위해 원본 엑셀 제외)
+*.xlsx
+*.xls
+*.csv
+
+# Design Mockups (이미 templates/에 이식 완료되어 배포 시 불필요)
+design/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

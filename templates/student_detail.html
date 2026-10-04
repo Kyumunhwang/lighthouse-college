@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}학업 및 성적 (Academic & GPA) - {{ student.name_kr }} ({{ student.nickname or student.name_en }}){% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Top Breadcrumb & Status Bar -->
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+      <a href="/" class="hover:text-slate-900">진학지도 포털</a>
+      <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+      <a href="/students" class="hover:text-slate-900">학생 디렉토리</a>
+      <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+      <span class="text-slate-900 font-bold">{{ student.name_kr }} ({{ student.nickname or student.name_en }}) • Grade {{ student.grade }}</span>
+    </div>
+
+    <div class="flex items-center gap-2.5">
+      {% if active_record and active_record.transcript_url %}
+      <a href="{{ active_record.transcript_url }}" target="_blank" rel="noopener noreferrer" 
+         class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 text-blue-700 text-xs font-bold hover:bg-blue-100 transition border border-blue-200 shadow-xs">
+        <span class="material-symbols-outlined text-[18px]">link</span>
+        <span>Google Drive 성적표 (Verified)</span>
+      </a>
+      {% endif %}
+
+      {% if current_user.is_superuser %}
+      <button onclick="document.getElementById('editAcademicModal').classList.remove('hidden')" 
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition shadow-sm">
+        <span class="material-symbols-outlined text-[18px]">edit</span>
+        <span>성적/지망 대학 수정 (Superuser)</span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Student Header Dossier Card -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- Left Column: Student Identity -->
+      <div class="lg:col-span-6 flex flex-col sm:flex-row items-start gap-5">
+        <div class="relative shrink-0">
+          <img src="{{ student.avatar_url or 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + student.student_id }}" 
+               class="w-24 h-24 rounded-2xl object-cover shadow-sm bg-slate-100 border border-slate-200">
+          <span class="absolute -bottom-1.5 -right-1.5 px-2 py-0.5 rounded-full bg-blue-800 text-white text-[11px] font-bold shadow-xs">
+            Grade {{ student.grade }}
+          </span>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-2xl font-bold text-slate-900">{{ student.name_kr }}</span>
+            <span class="text-base text-slate-500 font-medium">{{ student.name_en }}</span>
+            <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
+              Cohort 202{{ student.grade - 5 }}
+            </span>
+            <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-bold">
+              재학 중 (Enrolled)
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 pt-1 text-xs text-slate-500">
+            <div><span class="text-slate-400 font-medium">학번:</span> <span class="font-mono font-semibold text-slate-700">{{ student.student_id }}</span></div>
+            <div><span class="text-slate-400 font-medium">생년월일:</span> <span class="font-mono text-slate-700">{{ student.dob or '미등록' }}</span></div>
+            <div><span class="text-slate-400 font-medium">거주:</span> <span class="text-slate-700">{{ student.address or '대한민국 고양시' }}</span></div>
+            <div><span class="text-slate-400 font-medium">Common App:</span> <span class="font-mono text-slate-700">{{ student.common_app_id or 'CA-미등록' }}</span></div>
+            <div class="col-span-2 text-slate-700 flex items-center gap-1 pt-0.5">
+              <span class="material-symbols-outlined text-[16px] text-blue-700">mail</span>
+              <span>{{ student.email or 'student@lighthouse.edu' }}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 pt-1 text-xs">
+            <span class="text-slate-400">배정 카운슬러:</span>
+            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-bold">{{ student.counselor_name }}</span>
+            <span class="text-slate-400 ml-2">담임:</span>
+            <span class="text-slate-700 font-medium">{{ student.homeroom }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Target Universities & Aspirations -->
+      <div class="lg:col-span-6 bg-slate-50 rounded-xl p-4 border border-slate-200/80 space-y-2.5">
+        <div class="flex items-center justify-between pb-1 border-b border-slate-200/60">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-blue-700">school</span>
+            진학 목표 대학 & 희망 전공 (Aspirations)
+          </span>
+          <span class="text-[11px] font-semibold text-blue-800">Holistic Review</span>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div class="flex items-start justify-between gap-3">
+            <span class="font-bold text-slate-900 shrink-0 bg-blue-100 text-blue-900 px-1.5 py-0.5 rounded">1지망 (ED)</span>
+            <span class="text-right text-slate-800 font-semibold">
+              {{ active_record.target_uni_1 if active_record and active_record.target_uni_1 else 'Johns Hopkins University' }}
+              <br><span class="text-slate-500 font-normal">{{ active_record.target_major_1 if active_record and active_record.target_major_1 else 'Biomedical Engineering (BME)' }}</span>
+            </span>
+          </div>
+          <div class="flex items-start justify-between gap-3">
+            <span class="font-semibold text-slate-600 shrink-0 bg-slate-200 px-1.5 py-0.5 rounded">2지망 (RD)</span>
+            <span class="text-right text-slate-800">
+              {{ active_record.target_uni_2 if active_record and active_record.target_uni_2 else 'Cornell University' }}
+              <br><span class="text-slate-500">{{ active_record.target_major_2 if active_record and active_record.target_major_2 else 'Biological Sciences' }}</span>
+            </span>
+          </div>
+          <div class="flex items-start justify-between gap-3">
+            <span class="font-semibold text-slate-600 shrink-0 bg-slate-200 px-1.5 py-0.5 rounded">3지망 (RD)</span>
+            <span class="text-right text-slate-800">
+              {{ active_record.target_uni_3 if active_record and active_record.target_uni_3 else 'Northwestern University' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Grade Level Navigation Tabs (8th to 12th) -->
+  <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
+    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">학년별 누적 레코드:</span>
+    {% for g in [8, 9, 10, 11, 12] %}
+    <a href="/students/{{ student.student_id }}/academic?grade={{ g }}" 
+       class="px-4 py-2 rounded-xl text-xs font-bold transition-all {% if selected_grade == g %}bg-blue-900 text-white shadow-sm{% else %}bg-white text-slate-600 hover:bg-slate-100 border border-slate-200{% endif %}">
+      Grade {{ g }}
+      {% if g == student.grade %}
+      <span class="ml-1 text-[10px] {% if selected_grade == g %}text-blue-200{% else %}text-blue-600{% endif %}">(현재)</span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- GPA & Standardized Test Metric Snapshot Grid -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+    
+    <div class="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+      <span class="text-xs font-semibold text-slate-500">Unweighted GPA</span>
+      <div class="my-2 flex items-baseline gap-1">
+        <span class="text-2xl font-extrabold text-slate-900">{{ "%.2f"|format(active_record.gpa_unweighted) if active_record else '3.96' }}</span>
+        <span class="text-xs text-slate-400">/ 4.00</span>
+      </div>
+      <span class="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full w-fit">
+        {{ active_record.class_rank if active_record and active_record.class_rank else 'Top 3%' }}
+      </span>
+    </div>
+
+    <div class="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+      <span class="text-xs font-semibold text-slate-500">Weighted GPA</span>
+      <div class="my-2 flex items-baseline gap-1">
+        <span class="text-2xl font-extrabold text-slate-900">{{ "%.2f"|format(active_record.gpa_weighted) if active_record else '4.42' }}</span>
+      </div>
+      <span class="text-[11px] text-slate-500">Honors & AP 가중치</span>
+    </div>
+
+    <div class="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+      <span class="text-xs font-semibold text-slate-500">SAT Composite</span>
+      <div class="my-2 flex items-baseline gap-1">
+        <span class="text-2xl font-extrabold text-slate-900">{{ active_record.sat_total if active_record and active_record.sat_total else 1540 }}</span>
+        <span class="text-xs text-slate-400">/ 1600</span>
+      </div>
+      <span class="text-[11px] text-slate-500 font-mono">
+        R/W {{ active_record.sat_rw if active_record and active_record.sat_rw else 750 }} • M {{ active_record.sat_math if active_record and active_record.sat_math else 790 }}
+      </span>
+    </div>
+
+    <div class="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+      <span class="text-xs font-semibold text-slate-500">TOEFL iBT</span>
+      <div class="my-2 flex items-baseline gap-1">
+        <span class="text-2xl font-extrabold text-slate-900">{{ active_record.toefl_total if active_record and active_record.toefl_total else 116 }}</span>
+        <span class="text-xs text-slate-400">/ 120</span>
+      </div>
+      <span class="text-[11px] text-emerald-600 font-semibold">IVY League 충족</span>
+    </div>
+
+    <div class="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between">
+      <span class="text-xs font-semibold text-slate-500">ACT Composite</span>
+      <div class="my-2 flex items-baseline gap-1">
+        <span class="text-2xl font-extrabold text-slate-900">{{ active_record.act_composite if active_record and active_record.act_composite else 35 }}</span>
+        <span class="text-xs text-slate-400">/ 36</span>
+      </div>
+      <span class="text-[11px] text-slate-500">Top 1% Percentile</span>
+    </div>
+
+  </div>
+
+  <!-- Detailed Course Grades Table -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-800">assignment</span>
+        Grade {{ selected_grade }} 수강 과목 및 상세 성적표
+      </h3>
+      <span class="text-xs text-slate-500">총 {{ courses|length }}개 과목 등록</span>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-slate-50 border-y border-slate-200 text-xs font-bold text-slate-600 uppercase">
+          <tr>
+            <th class="py-3 px-4">과목명 (Course Name)</th>
+            <th class="py-3 px-3">이수 구분 (Category)</th>
+            <th class="py-3 px-3">학점 (Credits)</th>
+            <th class="py-3 px-3">학점 성적 (Letter Grade)</th>
+            <th class="py-3 px-4 text-right">환산 평점 (Grade Point)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for c in courses %}
+          <tr class="hover:bg-slate-50/70">
+            <td class="py-3 px-4 font-bold text-slate-900">{{ c.course_name }}</td>
+            <td class="py-3 px-3">
+              <span class="px-2 py-0.5 rounded text-xs font-bold {% if c.category == 'AP' %}bg-purple-100 text-purple-800 border border-purple-200{% elif c.category == 'Honors' %}bg-blue-100 text-blue-800 border border-blue-200{% else %}bg-slate-100 text-slate-700{% endif %}">
+                {{ c.category }}
+              </span>
+            </td>
+            <td class="py-3 px-3 font-mono text-slate-700">{{ c.credits }}</td>
+            <td class="py-3 px-3">
+              <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">{{ c.grade_letter }}</span>
+            </td>
+            <td class="py-3 px-4 text-right font-mono font-bold text-slate-800">{{ c.grade_point }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="py-8 text-center text-xs text-slate-400">
+              Grade {{ selected_grade }} 학년에 등록된 수강 과목 내역이 없습니다.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal: Edit Academic Record (Superuser Only) -->
+{% if current_user.is_superuser %}
+<div id="editAcademicModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-800">edit_note</span>
+        Grade {{ selected_grade }} 학업 레코드 수정 (Superuser)
+      </h3>
+      <button onclick="document.getElementById('editAcademicModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <form action="/api/students/{{ student.id }}/academic?grade={{ selected_grade }}" method="POST" class="space-y-3 text-xs">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Unweighted GPA</label>
+          <input type="number" step="0.01" name="gpa_unweighted" value="{{ active_record.gpa_unweighted if active_record else 3.96 }}" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Weighted GPA</label>
+          <input type="number" step="0.01" name="gpa_weighted" value="{{ active_record.gpa_weighted if active_record else 4.42 }}" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">SAT Total</label>
+          <input type="number" name="sat_total" value="{{ active_record.sat_total if active_record else 1540 }}" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">SAT R/W</label>
+          <input type="number" name="sat_rw" value="{{ active_record.sat_rw if active_record else 750 }}" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">SAT Math</label>
+          <input type="number" name="sat_math" value="{{ active_record.sat_math if active_record else 790 }}" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">1지망 대학 (ED)</label>
+        <input type="text" name="target_uni_1" value="{{ active_record.target_uni_1 if active_record else 'Johns Hopkins University' }}" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Google Drive 공식 성적표 URL</label>
+        <input type="url" name="transcript_url" value="{{ active_record.transcript_url if active_record else '' }}" placeholder="https://drive.google.com/..." class="w-full px-3 py-2 border rounded-lg">
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+        <button type="button" onclick="document.getElementById('editAcademicModal').classList.add('hidden')" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200">
+          취소
+        </button>
+        <button type="submit" class="px-4 py-2 rounded-lg bg-slate-900 text-white font-semibold hover:bg-slate-800 shadow-sm">
+          저장하기
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

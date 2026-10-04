@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}인터랙티브 상담 (Interactive Counseling) - {{ student.name_kr }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Breadcrumb & Top Bar -->
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+      <a href="/" class="hover:text-slate-900">진학지도 포털</a>
+      <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+      <a href="/students" class="hover:text-slate-900">학생 디렉토리</a>
+      <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+      <span class="text-slate-900 font-bold">{{ student.name_kr }} ({{ student.nickname or student.name_en }}) • Counseling Log</span>
+    </div>
+
+    <!-- Active User Role Badge Indicator -->
+    <div class="flex items-center gap-2 text-xs">
+      <span class="text-slate-400">현재 접속 권한:</span>
+      <span class="px-2.5 py-1 rounded-full font-bold {% if current_user.role == 'superuser' %}bg-slate-900 text-white{% elif current_user.role == 'teacher' %}bg-blue-800 text-white{% else %}bg-amber-600 text-white{% endif %}">
+        {% if current_user.role == 'superuser' %}👑 Superuser (최고 카운슬러 - 전체 권한)
+        {% elif current_user.role == 'teacher' %}👩‍🏫 Teacher (일반 교사 - View Only)
+        {% else %}🎓 Student (학생 본인 - [학생 영역] 작성 가능)
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  <!-- Student Header & Academic Mini Snapshot Strip -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <img src="{{ student.avatar_url or 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + student.student_id }}" 
+             class="w-16 h-16 rounded-2xl object-cover bg-slate-100 border border-slate-200 shadow-xs">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold text-slate-900">{{ student.name_kr }}</h1>
+            <span class="text-sm text-slate-500 font-medium">({{ student.name_en }})</span>
+            <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+              Grade {{ student.grade }} ({{ student.grade_code }})
+            </span>
+          </div>
+          <div class="text-xs text-slate-500 mt-1 font-mono">
+            학번: {{ student.student_id }} • 배정 카운슬러: {{ student.counselor_name }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Snapshot Metas -->
+      <div class="grid grid-cols-3 gap-3 text-xs">
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 block text-[11px]">Unweighted GPA</span>
+          <span class="font-extrabold text-slate-900 text-sm">3.96 / 4.00</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 block text-[11px]">SAT Composite</span>
+          <span class="font-extrabold text-slate-900 text-sm">1540 (M790)</span>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <span class="text-slate-400 block text-[11px]">Target Tier</span>
+          <span class="font-extrabold text-blue-800 text-sm">JHU · Cornell</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RBAC Security Alert Banner (Contextual) -->
+  {% if current_user.role != 'superuser' %}
+  <div class="p-4 rounded-xl bg-blue-50/80 border border-blue-200 flex items-start gap-3 text-xs text-blue-900">
+    <span class="material-symbols-outlined text-[20px] text-blue-700 shrink-0">security</span>
+    <div>
+      <span class="font-bold block">RBAC (Role-Based Access Control) 보안 정책 적용 중</span>
+      현재 계정은 <span class="font-semibold underline">{% if current_user.role == 'student' %}학생(Student){% else %}일반 교사(Teacher){% endif %}</span> 등급입니다. 카운슬러가 비공개(Private)로 지정한 입시 내부 전략 메모는 데이터베이스 쿼리 단계에서 완전히 마스킹되어 열람되지 않습니다.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Main Workspace: Left Interactive Thread Feed vs Right History Panel -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    
+    <!-- Left Column (8 cols): Interactive Counseling Log Threads & Form -->
+    <div class="lg:col-span-8 space-y-6">
+
+      <!-- Form: New Counseling Thread or Notes -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-800">add_comment</span>
+            신규 진학 상담 세션 작성
+          </h2>
+          <span class="text-xs text-slate-400 font-mono">2025-2026 Academic Term</span>
+        </div>
+
+        <form action="/api/students/{{ student.id }}/counseling" method="POST" class="space-y-4 text-xs">
+          
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">상담 일시 및 장소 *</label>
+              <input type="text" name="session_date" required placeholder="예: 2025. 02. 25 (화) 16:00 (진학상담실)" class="w-full px-3 py-2 border rounded-lg bg-slate-50">
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 mb-1">참석자 명단</label>
+              <input type="text" name="attendees" placeholder="예: {{ student.name_kr }}(학생), 나경식(카운슬러), 모(학부모)" value="{{ student.name_kr }}(학생), 나경식(카운슬러)" class="w-full px-3 py-2 border rounded-lg bg-slate-50">
+            </div>
+          </div>
+
+          <!-- Section 1: Student Area (학생 작성 영역) -->
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                <span class="material-symbols-outlined text-[16px] text-blue-700">edit_note</span>
+                [학생 작성 영역] 학생의 고민 및 상담 요청 사항 (Student Pre-Session Memo)
+              </span>
+              <span class="text-[11px] text-slate-500">학생 & 카운슬러 작성 가능</span>
+            </div>
+            <textarea 
+              name="student_notes" 
+              rows="3" 
+              placeholder="이번 상담에서 논의하고 싶은 목표 대학, GPA 성적 관련 고민, 공인시험 또는 비교과 활동 질문을 적어주세요..." 
+              class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500/20"></textarea>
+          </div>
+
+          <!-- Section 2: Counselor Feedback Area (Superuser 전용) -->
+          {% if current_user.is_superuser %}
+          <div class="p-4 rounded-xl bg-blue-50/50 border border-blue-200 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-blue-950 flex items-center gap-1.5 text-xs">
+                <span class="material-symbols-outlined text-[16px] text-blue-700">psychology</span>
+                [카운슬러 영역] 입시 전략 피드백 및 지도 제언 (Counselor Feedback)
+              </span>
+              <span class="text-[11px] text-blue-800 font-bold bg-blue-100 px-2 py-0.5 rounded">Superuser Only</span>
+            </div>
+            
+            <textarea 
+              name="counselor_feedback" 
+              rows="4" 
+              placeholder="학생의 질의에 대한 맞춤형 진학 전략, 과목 수강 조언, Holistic 포트폴리오 보강 로드맵을 작성하세요..." 
+              class="w-full px-3 py-2 border rounded-lg bg-white focus:ring-2 focus:ring-blue-500/20"></textarea>
+
+            <!-- Private Memo Toggle (PRD 핵심 요구사항) -->
+            <div class="flex items-center justify-between pt-2 border-t border-blue-200/60">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="is_private" name="is_private" value="true" class="w-4 h-4 rounded text-blue-800 focus:ring-blue-500">
+                <label for="is_private" class="font-bold text-amber-900 flex items-center gap-1 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-amber-700">lock</span>
+                  카운슬러 전용 '비공개 메모(Private Memo)'로 설정
+                </label>
+              </div>
+              <span class="text-[11px] text-slate-500">
+                * 체크 시 일반 교사 및 학생 계정에서는 피드백 내용이 마스킹됩니다.
+              </span>
+            </div>
+          </div>
+          {% else %}
+          <div class="p-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-xs flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">lock</span>
+            카운슬러 피드백 작성 영역은 최고 관리자(나경식 선생님) 계정에서만 활성화됩니다.
+          </div>
+          {% endif %}
+
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition shadow-sm flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px]">send</span>
+              상담 기록 등록
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- Counseling Threads List -->
+      <div class="space-y-5">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <span class="material-symbols-outlined text-blue-800">forum</span>
+          누적 상담 타임라인 기록 (총 {{ counseling_threads|length }}건)
+        </h3>
+
+        {% for log in counseling_threads %}
+        <div class="bg-white rounded-2xl border {% if log.is_private and log.can_view_private %}border-amber-300 bg-amber-50/30{% else %}border-slate-200{% endif %} shadow-sm p-6 space-y-4">
+          
+          <!-- Header Meta -->
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-700 text-[20px]">event</span>
+              <span class="font-bold text-slate-900 text-sm">{{ log.session_date }}</span>
+              {% if log.attendees %}
+              <span class="text-xs text-slate-500">({{ log.attendees }})</span>
+              {% endif %}
+            </div>
+
+            <div>
+              {% if log.is_private %}
+                {% if log.can_view_private %}
+                <!-- Superuser View of Private Note: Golden Yellow Warning Box per DESIGN.md -->
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                  <span class="material-symbols-outlined text-[14px]">lock</span>
+                  CONFIDENTIAL COUNSELOR NOTE (SUPERUSER VIEW)
+                </span>
+                {% else %}
+                <!-- Student / Teacher View of Private Note -->
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                  <span class="material-symbols-outlined text-[14px]">lock</span>
+                  비공개 전략 메모 (보안 통제)
+                </span>
+                {% endif %}
+              {% else %}
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span class="material-symbols-outlined text-[14px]">public</span>
+                공개 상담 기록 (Public)
+              </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- 1. Student Notes Section -->
+          {% if log.student_notes %}
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px] text-blue-700">person</span>
+              학생 사전 고민 및 상담 요청:
+            </div>
+            <p class="text-xs text-slate-800 leading-relaxed whitespace-pre-line pl-1">
+              {{ log.student_notes }}
+            </p>
+          </div>
+          {% endif %}
+
+          <!-- 2. Counselor Feedback Section (With DESIGN.md styling for Private) -->
+          {% if log.is_private and log.can_view_private %}
+          <!-- Golden Amber Confidential Panel per DESIGN.md -->
+          <div class="p-4 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] border-l-4 border-l-[#D97706] space-y-2">
+            <div class="text-xs font-bold text-[#B45309] uppercase tracking-wider flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-[#B45309]">lock</span>
+              CONFIDENTIAL COUNSELOR NOTE — RESTRICTED ACCESS (나경식 진학교사 비공개)
+            </div>
+            <p class="text-xs text-[#78350F] leading-relaxed whitespace-pre-line font-medium pl-1">
+              {{ log.counselor_feedback }}
+            </p>
+          </div>
+          {% elif log.is_private and not log.can_view_private %}
+          <!-- Masked Notice for Non-Superusers -->
+          <div class="p-3.5 rounded-xl bg-slate-100 border border-slate-200 space-y-1">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px] text-slate-500">lock</span>
+              카운슬러 피드백:
+            </div>
+            <p class="text-xs text-slate-500 italic leading-relaxed pl-1">
+              {{ log.counselor_feedback }}
+            </p>
+          </div>
+          {% else %}
+          <!-- Public Counselor Feedback -->
+          <div class="p-3.5 rounded-xl bg-blue-50/60 border border-blue-200 space-y-1">
+            <div class="text-[11px] font-bold text-blue-800 uppercase tracking-wider flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px] text-blue-700">psychology</span>
+              카운슬러 진학 전략 피드백 ({{ log.counselor_name }}):
+            </div>
+            <p class="text-xs text-slate-800 leading-relaxed whitespace-pre-line pl-1">
+              {{ log.counselor_feedback or '피드백 작성 대기 중입니다.' }}
+            </p>
+          </div>
+          {% endif %}
+
+          <!-- 3. Action Items Checklist -->
+          {% if log.action_items and log.action_items|length > 0 %}
+          <div class="pt-1">
+            <span class="text-[11px] font-bold text-slate-500 block mb-1.5">다음 상담 전 필수 실행 과제 (Action Items):</span>
+            <div class="space-y-1">
+              {% for act in log.action_items %}
+              <div class="flex items-center gap-2 text-xs text-slate-700">
+                <span class="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
+                <span>{{ act }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-xs text-slate-400 bg-white rounded-2xl border border-slate-200">
+          등록된 상담 기록이 없습니다.
+        </div>
+        {% endfor %}
+      </div>
+
+    </div>
+
+    <!-- Right Column (4 cols): Quick Profile & Guidelines -->
+    <div class="lg:col-span-4 space-y-6">
+      
+      <!-- Student Info Snapshot Card -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <span class="material-symbols-outlined text-blue-800 text-[20px]">account_box</span>
+          학생 기본 인적 사항
+        </h3>
+
+        <div class="space-y-2.5 text-xs text-slate-600">
+          <div class="flex justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-400">한글/영문 성명</span>
+            <span class="font-bold text-slate-900">{{ student.name_kr }} ({{ student.name_en }})</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-400">학번 (Student ID)</span>
+            <span class="font-mono text-slate-800">{{ student.student_id }}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-400">현재 학년 / 반</span>
+            <span class="font-bold text-blue-800">Grade {{ student.grade }} ({{ student.grade_code }})</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-400">생년월일</span>
+            <span class="font-mono text-slate-800">{{ student.dob or '미등록' }}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-100">
+            <span class="text-slate-400">비상 연락처</span>
+            <span class="font-mono text-slate-800">{{ student.phone or '미등록' }}</span>
+          </div>
+          <div class="flex justify-between py-1">
+            <span class="text-slate-400">주소</span>
+            <span class="text-right text-slate-800 truncate max-w-[180px]">{{ student.address or '고양시' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Private Memo Policy Box -->
+      <div class="bg-[#FEF3C7] rounded-2xl p-6 border border-[#FDE68A] text-[#78350F] space-y-3 shadow-xs">
+        <div class="flex items-center gap-2 text-[#B45309] text-xs font-bold uppercase tracking-wider">
+          <span class="material-symbols-outlined text-[18px]">lock</span>
+          비공개 메모(Private Memo) 보안 원칙
+        </div>
+        <p class="text-xs leading-relaxed">
+          1. <strong>나경식 카운슬러 전용:</strong> 목표 대학 지원 가능성, 원서 원본 추천서 내용, 장학금/재정보조(CSS Profile) 협의사항 등 민감 데이터는 반드시 <strong>비공개 메모</strong>로 지정하십시오.<br><br>
+          2. <strong>Data Masking:</strong> 학생이나 일반 교사가 본 화면에 접근하더라도 소스코드(F12) 및 네트워크 응답 상에 해당 텍스트가 전송되지 않습니다.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

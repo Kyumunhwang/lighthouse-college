@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}비교과 & 열정프로젝트 (ECs & Passion Projects) - {{ student.name_kr }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Breadcrumb & Top Actions -->
+  <div class="flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+      <a href="/" class="hover:text-slate-900">진학지도 포털</a>
+      <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+      <a href="/students" class="hover:text-slate-900">학생 디렉토리</a>
+      <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+      <span class="text-slate-900 font-bold">{{ student.name_kr }} ({{ student.nickname or student.name_en }}) • ECs & Projects</span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      {% if current_user.is_superuser %}
+      <button onclick="document.getElementById('addEcModal').classList.remove('hidden')" 
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition shadow-sm">
+        <span class="material-symbols-outlined text-[18px]">add_circle</span>
+        <span>신규 활동/프로젝트 추가 (Superuser)</span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Metric Highlights Row -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+      <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Common App Activities</span>
+      <div class="flex items-baseline justify-between my-1">
+        <span class="text-3xl font-extrabold text-slate-900">{{ extracurriculars|length }}</span>
+        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">목표: 10개 최적화</span>
+      </div>
+      <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+        <div class="bg-blue-700 h-full rounded-full" style="width: 100%"></div>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+      <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Passion Projects</span>
+      <div class="flex items-baseline justify-between my-1">
+        <span class="text-3xl font-extrabold text-blue-800">{{ passion_projects|length }}</span>
+        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800">진행 중 (In-Progress)</span>
+      </div>
+      <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+        <div class="bg-blue-800 h-full rounded-full" style="width: 80%"></div>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+      <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Verified Proofs</span>
+      <div class="flex items-baseline justify-between my-1">
+        <span class="text-3xl font-extrabold text-slate-900">{{ verified_proofs_count }}</span>
+        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Drive 검증 완료</span>
+      </div>
+      <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+        <div class="bg-emerald-600 h-full rounded-full" style="width: 90%"></div>
+      </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
+      <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Accumulated Hours</span>
+      <div class="flex items-baseline justify-between my-1">
+        <span class="text-3xl font-extrabold text-slate-900">{{ total_hours }}<span class="text-sm font-normal text-slate-500">hrs</span></span>
+        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">봉사 및 연구 포함</span>
+      </div>
+      <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+        <div class="bg-slate-700 h-full rounded-full" style="width: 85%"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Main Grid: Left Timeline & Deep-Dive (8 cols) / Right Drive Depot (4 cols) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    
+    <!-- Left Column: Passion Project Deep-Dive & Activities Grid -->
+    <div class="lg:col-span-8 space-y-8">
+      
+      <!-- Passion Project Deep-Dive Section -->
+      {% for pp in passion_projects %}
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-700 text-[24px]">biotech</span>
+              <h2 class="text-lg font-bold text-slate-900">{{ pp.title }}</h2>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">{{ pp.summary }}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+              {{ pp.status }}
+            </span>
+            {% if pp.evidence_url %}
+            <a href="{{ pp.evidence_url }}" target="_blank" rel="noopener noreferrer" 
+               class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-100 text-slate-800 text-xs font-bold hover:bg-slate-200 transition">
+              <span class="material-symbols-outlined text-[16px] text-blue-700">link</span>
+              <span>마스터 폴더</span>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Timeline Steps -->
+        <div class="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+          {% for step in pp.parsed_timeline %}
+          <div class="relative space-y-1">
+            <div class="absolute -left-6 top-1 w-3.5 h-3.5 rounded-full bg-blue-700 ring-4 ring-white"></div>
+            
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-900 text-sm">{{ step.step }}</span>
+              <span class="font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded">{{ step.period }}</span>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed">{{ step.detail }}</p>
+            
+            {% if step.doc_url %}
+            <div class="pt-1">
+              <a href="{{ step.doc_url }}" target="_blank" rel="noopener noreferrer" 
+                 class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 hover:underline">
+                <span class="material-symbols-outlined text-[14px]">description</span>
+                단계별 산출물 보기 (Drive Verified)
+              </a>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+      {% endfor %}
+
+      <!-- 6 Categories Extracurricular Activities Grid -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-800">star</span>
+            비교과 활동 상세 포트폴리오 (Extracurricular Roster)
+          </h3>
+          <span class="text-xs text-slate-500">카테고리별 분류 완료</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {% for ec in extracurriculars %}
+          <div class="p-4 rounded-xl border border-slate-200/90 hover:border-slate-300 bg-slate-50/50 space-y-2.5 transition">
+            
+            <div class="flex items-center justify-between">
+              <span class="px-2 py-0.5 rounded text-[11px] font-bold 
+                {% if ec.category == 'Leadership' %}bg-amber-100 text-amber-800
+                {% elif ec.category == 'Academic' %}bg-purple-100 text-purple-800
+                {% elif ec.category == 'Volunteer' %}bg-emerald-100 text-emerald-800
+                {% elif ec.category == 'Sports' %}bg-blue-100 text-blue-800
+                {% else %}bg-slate-200 text-slate-800{% endif %}">
+                {{ ec.category }}
+              </span>
+              <span class="text-[11px] text-slate-400 font-mono">Grades {{ ec.grade_levels }}</span>
+            </div>
+
+            <div>
+              <h4 class="font-bold text-slate-900 text-sm leading-snug">{{ ec.title }}</h4>
+              <p class="text-xs text-blue-800 font-medium">{{ ec.role }} • {{ ec.organization }}</p>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed">{{ ec.description }}</p>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
+              <span class="text-slate-500 font-mono text-[11px]">
+                {{ ec.hours_per_week }} hrs/wk • {{ ec.weeks_per_year }} wks/yr
+              </span>
+              <div>
+                {% if ec.evidence_url %}
+                <a href="{{ ec.evidence_url }}" target="_blank" rel="noopener noreferrer" 
+                   class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 hover:underline">
+                  <span class="material-symbols-outlined text-[14px]">link</span> 증빙 보기
+                </a>
+                {% else %}
+                <span class="text-slate-400 text-[11px] italic">증빙 미등록</span>
+                {% endif %}
+              </div>
+            </div>
+
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Drive Asset Depot & Policy Guidance -->
+    <div class="lg:col-span-4 space-y-6">
+      
+      <!-- Central Drive Asset Depot -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-800 text-[20px]">folder_shared</span>
+            Google Drive 증빙 아카이브
+          </h3>
+          <span class="material-symbols-outlined text-emerald-600 text-[18px]">cloud_done</span>
+        </div>
+
+        <p class="text-xs text-slate-500 leading-relaxed">
+          본 시스템은 서버 저장 용량을 절약하고 데이터 유실을 방지하기 위해 모든 증빙 자료(논문, 인증서, 상장 등)를 공식 Google Drive 클라우드 링크로 연동합니다.
+        </p>
+
+        <div class="space-y-2 pt-2">
+          {% for ec in extracurriculars %}
+          {% if ec.evidence_url %}
+          <a href="{{ ec.evidence_url }}" target="_blank" rel="noopener noreferrer" 
+             class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 hover:bg-blue-50/70 border border-slate-200 transition text-xs">
+            <div class="flex items-center gap-2 truncate">
+              <span class="material-symbols-outlined text-blue-700 text-[18px] shrink-0">draft</span>
+              <span class="font-medium text-slate-800 truncate">{{ ec.title }}</span>
+            </div>
+            <span class="material-symbols-outlined text-slate-400 text-[16px] shrink-0">open_in_new</span>
+          </a>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Counselor Review Notice -->
+      <div class="bg-slate-900 rounded-2xl p-6 text-white space-y-3 shadow-sm">
+        <div class="flex items-center gap-2 text-amber-300 text-xs font-semibold uppercase tracking-wider">
+          <span class="material-symbols-outlined text-[18px]">verified_user</span>
+          진학 카운슬러 실시간 검증
+        </div>
+        <h4 class="text-sm font-bold">Holistic Admissions Checklist</h4>
+        <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+          <li>미국 상위권 대학은 활동의 '개수'보다 '깊이(Depth)'와 '지속성'을 평가합니다.</li>
+          <li>열정 프로젝트 최종 산출물은 Common App 추가 정보(Additional Info) 항목에 첨부 링크로 활용됩니다.</li>
+        </ul>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal: Add Extracurricular Activity (Superuser Only) -->
+{% if current_user.is_superuser %}
+<div id="addEcModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-800">add_task</span>
+        신규 비교과 활동 추가 (Superuser)
+      </h3>
+      <button onclick="document.getElementById('addEcModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <form action="/api/students/{{ student.id }}/ecs" method="POST" class="space-y-3 text-xs">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">분류 (Category) *</label>
+          <select name="category" class="w-full px-3 py-2 border rounded-lg bg-white">
+            <option value="Leadership">리더십 (Leadership)</option>
+            <option value="Clubs">클럽 / 동아리 (Clubs)</option>
+            <option value="Academic">학술 연구 (Academic)</option>
+            <option value="Volunteer">봉사 활동 (Volunteer)</option>
+            <option value="Sports">체육 / 스포츠 (Sports)</option>
+            <option value="Arts">예술 / 미디어 (Arts)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">참여 학년 (예: 10, 11)</label>
+          <input type="text" name="grade_levels" value="{{ student.grade }}" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">활동명 (Activity Title) *</label>
+        <input type="text" name="title" required placeholder="예: 국제 청소년 환경 포럼" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">기관/단체명</label>
+          <input type="text" name="organization" placeholder="예: 유엔환경계획 청소년지부" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">담당 직책 / 역할</label>
+          <input type="text" name="role" placeholder="예: 한국 청소년 대표" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">주당 시간 (Hours/Week)</label>
+          <input type="number" step="0.5" name="hours_per_week" value="3.0" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">연간 주수 (Weeks/Year)</label>
+          <input type="number" step="1" name="weeks_per_year" value="30" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">활동 세부 설명</label>
+        <textarea name="description" rows="3" placeholder="주요 성과, 역할, 배운 점 등..." class="w-full px-3 py-2 border rounded-lg"></textarea>
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Google Drive 증빙 URL (링크만 입력)</label>
+        <input type="url" name="evidence_url" placeholder="https://drive.google.com/..." class="w-full px-3 py-2 border rounded-lg">
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+        <button type="button" onclick="document.getElementById('addEcModal').classList.add('hidden')" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200">
+          취소
+        </button>
+        <button type="submit" class="px-4 py-2 rounded-lg bg-slate-900 text-white font-semibold hover:bg-slate-800 shadow-sm">
+          활동 추가
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

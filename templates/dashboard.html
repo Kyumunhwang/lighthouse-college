@@ -1,0 +1,361 @@
+{% extends "base.html" %}
+
+{% block title %}대시보드 (Dashboard) - Lighthouse College System{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  
+  <!-- Top Welcome Banner & Key Action Area -->
+  <section class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 p-8 text-white shadow-md">
+    <div class="absolute -right-16 -top-16 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      
+      <div class="space-y-2 max-w-3xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-200 text-xs font-semibold backdrop-blur-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          2025-2026 Admissions & College Prep Cycle
+        </div>
+        <h1 class="text-3xl font-bold tracking-tight">등대글로벌스쿨 진학 지도 포털</h1>
+        <p class="text-slate-300 text-sm leading-relaxed">
+          {{ current_user.name }}님, 학생들의 8학년부터 12학년까지 누적된 학업, 비교과, 표준화 시험 및 입시 상담 기록을 체계적으로 통합 관리합니다.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        {% if current_user.is_superuser %}
+        <button onclick="document.getElementById('addStudentModal').classList.remove('hidden')" 
+                class="px-4 py-2.5 rounded-xl bg-white text-slate-900 text-sm font-semibold hover:bg-slate-100 transition shadow-sm flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">person_add</span>
+          신규 학생 등록
+        </button>
+        {% endif %}
+        <a href="/students/LGS-220814/counseling" 
+           class="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 transition shadow-sm flex items-center gap-2">
+          <span class="material-symbols-outlined text-[18px]">post_add</span>
+          통합 상담록 작성
+        </a>
+      </div>
+
+    </div>
+
+    <!-- Quick Metrics Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+      
+      <!-- Metric 1: Total Students -->
+      <div class="p-5 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-300">전담 관리 학생 수</span>
+          <span class="material-symbols-outlined text-blue-400 text-[22px]">diversity_3</span>
+        </div>
+        <div class="my-3 flex items-baseline gap-1.5">
+          <span class="text-3xl font-extrabold text-white">{{ stats.total_students }}</span>
+          <span class="text-xs text-slate-300">명</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px] text-slate-300 flex-wrap">
+          <span class="bg-white/10 px-2 py-0.5 rounded font-mono">12th: {{ stats.count_h12 }}</span>
+          <span class="bg-white/10 px-2 py-0.5 rounded font-mono">11th: {{ stats.count_h11 }}</span>
+          <span class="bg-white/10 px-2 py-0.5 rounded font-mono">10th: {{ stats.count_h10 }}</span>
+          <span class="bg-white/10 px-2 py-0.5 rounded font-mono">9th: {{ stats.count_h9 }}</span>
+          <span class="bg-white/10 px-2 py-0.5 rounded font-mono">8th: {{ stats.count_m8 }}</span>
+        </div>
+      </div>
+
+      <!-- Metric 2: Counseling Sessions -->
+      <div class="p-5 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-300">누적 상담 기록 건수</span>
+          <span class="material-symbols-outlined text-blue-400 text-[22px]">event_available</span>
+        </div>
+        <div class="my-3 flex items-baseline gap-1.5">
+          <span class="text-3xl font-extrabold text-white">{{ stats.total_counselings }}</span>
+          <span class="text-xs text-slate-300">건</span>
+        </div>
+        <div class="text-[11px] text-emerald-300 font-semibold flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">lock</span>
+          Private 전략 메모 포함 (RBAC 통제)
+        </div>
+      </div>
+
+      <!-- Metric 3: Passion Projects -->
+      <div class="p-5 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-300">심층 열정 프로젝트</span>
+          <span class="material-symbols-outlined text-amber-400 text-[22px]">biotech</span>
+        </div>
+        <div class="my-3 flex items-baseline gap-1.5">
+          <span class="text-3xl font-extrabold text-white">{{ stats.total_passion_projects }}</span>
+          <span class="text-xs text-slate-300">건 활성화</span>
+        </div>
+        <div class="text-[11px] text-slate-300">
+          타임라인 단계별 연구 추적 중
+        </div>
+      </div>
+
+      <!-- Metric 4: Verified Proofs -->
+      <div class="p-5 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold text-slate-300">Google Drive 증빙 링크</span>
+          <span class="material-symbols-outlined text-emerald-400 text-[22px]">link</span>
+        </div>
+        <div class="my-3 flex items-baseline gap-1.5">
+          <span class="text-3xl font-extrabold text-white">{{ stats.total_ecs }}</span>
+          <span class="text-xs text-slate-300">개 EC & 증빙 연결</span>
+        </div>
+        <div class="text-[11px] text-slate-300">
+          로컬 파일 무저장 가벼운 구조
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Main Grid: Students Table (Left 8 cols) vs Live Updates (Right 4 cols) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+    
+    <!-- Left: Students Directory & Grade Filter -->
+    <div class="lg:col-span-8 space-y-6">
+      
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-800 text-[22px]">school</span>
+              재학생 진학 디렉토리
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">8학년부터 12학년까지 각 학년별 학생 현황 및 지망 목표</p>
+          </div>
+
+          <!-- Grade Filter Pills -->
+          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-medium overflow-x-auto">
+            <a href="/?grade=ALL" class="px-3 py-1.5 rounded-lg transition {% if current_grade == 'ALL' %}bg-white text-slate-900 font-bold shadow-xs{% else %}text-slate-600 hover:text-slate-900{% endif %}">전체</a>
+            <a href="/?grade=H12" class="px-3 py-1.5 rounded-lg transition {% if current_grade == 'H12' %}bg-white text-slate-900 font-bold shadow-xs{% else %}text-slate-600 hover:text-slate-900{% endif %}">12th (H12)</a>
+            <a href="/?grade=H11" class="px-3 py-1.5 rounded-lg transition {% if current_grade == 'H11' %}bg-white text-slate-900 font-bold shadow-xs{% else %}text-slate-600 hover:text-slate-900{% endif %}">11th (H11)</a>
+            <a href="/?grade=H10" class="px-3 py-1.5 rounded-lg transition {% if current_grade == 'H10' %}bg-white text-slate-900 font-bold shadow-xs{% else %}text-slate-600 hover:text-slate-900{% endif %}">10th (H10)</a>
+            <a href="/?grade=H9" class="px-3 py-1.5 rounded-lg transition {% if current_grade == 'H9' %}bg-white text-slate-900 font-bold shadow-xs{% else %}text-slate-600 hover:text-slate-900{% endif %}">9th (H9)</a>
+            <a href="/?grade=M8" class="px-3 py-1.5 rounded-lg transition {% if current_grade == 'M8' %}bg-white text-slate-900 font-bold shadow-xs{% else %}text-slate-600 hover:text-slate-900{% endif %}">8th (M8)</a>
+          </div>
+        </div>
+
+        <!-- Students Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 border-y border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
+              <tr>
+                <th class="py-3 px-4">학생 프로필</th>
+                <th class="py-3 px-3">학년 / 학번</th>
+                <th class="py-3 px-3">담임 교사</th>
+                <th class="py-3 px-3">목표 지망 대학 (1지망)</th>
+                <th class="py-3 px-4 text-right">진학 바로가기</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              {% for s in students %}
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                
+                <td class="py-3.5 px-4">
+                  <div class="flex items-center gap-3">
+                    <img src="{{ s.avatar_url or 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + s.student_id }}" class="w-9 h-9 rounded-xl object-cover bg-slate-100 border border-slate-200">
+                    <div>
+                      <div class="font-bold text-slate-900 flex items-center gap-1.5">
+                        {{ s.name_kr }}
+                        <span class="text-xs font-normal text-slate-500">({{ s.nickname or s.name_en }})</span>
+                        {% if s.student_id == 'LGS-220814' %}
+                        <span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-800 font-bold">Design Sample</span>
+                        {% endif %}
+                      </div>
+                      <div class="text-[11px] text-slate-400 font-mono">{{ s.email or '이메일 미등록' }}</div>
+                    </div>
+                  </div>
+                </td>
+
+                <td class="py-3.5 px-3">
+                  <span class="px-2 py-0.5 rounded-full text-xs font-bold {% if s.grade_code == 'H12' %}bg-red-50 text-red-700 border border-red-200{% elif s.grade_code == 'H11' %}bg-blue-50 text-blue-700 border border-blue-200{% else %}bg-slate-100 text-slate-700{% endif %}">
+                    Grade {{ s.grade }} ({{ s.grade_code }})
+                  </span>
+                  <div class="text-[11px] text-slate-400 font-mono mt-0.5">{{ s.student_id }}</div>
+                </td>
+
+                <td class="py-3.5 px-3 text-xs text-slate-600">
+                  {{ s.homeroom or '나경식 카운슬러' }}
+                </td>
+
+                <td class="py-3.5 px-3">
+                  <div class="text-xs font-medium text-slate-800 truncate max-w-[200px]">
+                    {% if s.academic_records and s.academic_records[0].target_uni_1 %}
+                      {{ s.academic_records[0].target_uni_1 }}
+                    {% else %}
+                      <span class="text-slate-400 italic">상담 설정 중</span>
+                    {% endif %}
+                  </div>
+                  <div class="text-[11px] text-slate-400 truncate max-w-[200px]">
+                    {% if s.academic_records and s.academic_records[0].target_major_1 %}
+                      {{ s.academic_records[0].target_major_1 }}
+                    {% endif %}
+                  </div>
+                </td>
+
+                <td class="py-3.5 px-4 text-right">
+                  <div class="inline-flex items-center gap-1">
+                    <a href="/students/{{ s.student_id }}/academic" 
+                       class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition"
+                       title="학업 및 GPA 성적">
+                      <span class="material-symbols-outlined text-[18px]">grade</span>
+                    </a>
+                    <a href="/students/{{ s.student_id }}/ecs" 
+                       class="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition"
+                       title="비교과 및 Passion Project">
+                      <span class="material-symbols-outlined text-[18px]">award_star</span>
+                    </a>
+                    <a href="/students/{{ s.student_id }}/counseling" 
+                       class="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition"
+                       title="인터랙티브 상담 기록">
+                      <span class="material-symbols-outlined text-[18px]">history_edu</span>
+                    </a>
+                  </div>
+                </td>
+
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="text-xs text-slate-400 text-center pt-2">
+          총 {{ students|length }}명의 학생이 표시되고 있습니다.
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Right: Recent Counseling Logs & Strategy Notes -->
+    <div class="lg:col-span-4 space-y-6">
+      
+      <!-- Recent Counseling Sessions -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <span class="material-symbols-outlined text-blue-800 text-[20px]">forum</span>
+            최근 인터랙티브 상담 피드
+          </h3>
+          <span class="text-xs text-blue-700 font-semibold">실시간 동기화</span>
+        </div>
+
+        <div class="space-y-3">
+          {% for cl in recent_counselings %}
+          <div class="p-3.5 rounded-xl border {% if cl.is_private %}bg-amber-50/70 border-amber-200{% else %}bg-slate-50 border-slate-200{% endif %} space-y-2">
+            
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-900">{{ cl.student.name_kr }} ({{ cl.student.nickname }})</span>
+              <span class="text-slate-400 text-[11px]">{{ cl.session_date }}</span>
+            </div>
+
+            {% if cl.is_private %}
+            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+              <span class="material-symbols-outlined text-[12px]">lock</span>
+              비공개 전략 메모 (Confidential)
+            </div>
+            {% endif %}
+
+            <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+              {{ cl.counselor_feedback or cl.student_notes or '상담 메모가 작성되었습니다.' }}
+            </p>
+
+            <div class="flex items-center justify-between pt-1 text-[11px]">
+              <span class="text-slate-400 font-mono">{{ cl.student.grade_code }} • {{ cl.counselor_name }}</span>
+              <a href="/students/{{ cl.student.student_id }}/counseling" class="text-blue-600 hover:underline font-semibold">상세보기 &rarr;</a>
+            </div>
+
+          </div>
+          {% else %}
+          <div class="p-4 text-center text-xs text-slate-400">
+            상담 기록이 없습니다.
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Strategy & Drive Guidelines Card -->
+      <div class="bg-gradient-to-br from-blue-900 to-indigo-950 rounded-2xl p-6 text-white space-y-3 shadow-sm">
+        <div class="flex items-center gap-2 text-blue-200 text-xs font-semibold uppercase tracking-wider">
+          <span class="material-symbols-outlined text-[18px]">verified</span>
+          시스템 보안 & 데이터 정책
+        </div>
+        <h4 class="text-base font-bold">No Local Uploads & RBAC</h4>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          1. <strong>보안 정책:</strong> 학생 및 일반 교사 권한 접근 시, 비공개 입시 전략 메모(Private Memo)는 백엔드 쿼리에서 원천 마스킹 처리됩니다.<br><br>
+          2. <strong>스토리지 최적화:</strong> 대용량 포트폴리오 파일은 서버에 직접 업로드하지 않으며, 구글 드라이브 URL을 📎 링크로 변환하여 안전하게 제공합니다.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal: Add Student (Superuser Only) -->
+<div id="addStudentModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-800">person_add</span>
+        신규 진학 대상 학생 등록 (Superuser 전용)
+      </h3>
+      <button onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <form action="/api/students" method="POST" class="space-y-3 text-xs">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">한글 이름 *</label>
+          <input type="text" name="name_kr" required placeholder="예: 홍길동" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">영문 이름 / Nickname</label>
+          <input type="text" name="name_en" placeholder="예: Gildong (John)" class="w-full px-3 py-2 border rounded-lg">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">학번 (Student ID) *</label>
+          <input type="text" name="student_id" required placeholder="예: 2026F1499" class="w-full px-3 py-2 border rounded-lg font-mono">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">학년 선택 *</label>
+          <select name="grade_code" class="w-full px-3 py-2 border rounded-lg bg-white">
+            <option value="H12">Grade 12 (H12)</option>
+            <option value="H11" selected>Grade 11 (H11)</option>
+            <option value="H10">Grade 10 (H10)</option>
+            <option value="H9">Grade 9 (H9)</option>
+            <option value="M8">Grade 8 (M8)</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">이메일</label>
+        <input type="email" name="email" placeholder="student@lgs.ac.kr" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">1지망 목표 대학</label>
+        <input type="text" name="target_uni" placeholder="예: Johns Hopkins University" class="w-full px-3 py-2 border rounded-lg">
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+        <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200">
+          취소
+        </button>
+        <button type="submit" class="px-4 py-2 rounded-lg bg-slate-900 text-white font-semibold hover:bg-slate-800 shadow-sm">
+          등록 완료
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

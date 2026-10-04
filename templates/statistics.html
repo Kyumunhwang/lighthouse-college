@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}통계 및 원서 현황 (College Board Statistics) - Lighthouse College System{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Breadcrumb -->
+  <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+    <a href="/" class="hover:text-slate-900">진학지도 포털</a>
+    <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+    <span class="text-slate-900 font-bold">통계 및 원서 현황 (College Board)</span>
+  </div>
+
+  <!-- Header Banner -->
+  <div class="bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-6 text-white shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">2026 Admissions & Cohort Statistics</h1>
+      <p class="text-xs text-blue-200 mt-1">등대글로벌스쿨 8학년~12학년 학생 진학 지표 및 원서 전략 집계</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="px-3 py-1 rounded-full bg-white/10 text-xs font-semibold backdrop-blur-xs">
+        총 관리 인원: {{ stats.total_students }}명
+      </span>
+    </div>
+  </div>
+
+  <!-- Key Statistics Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    
+    <!-- Grade Distribution Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+      <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-800">bar_chart</span>
+        학년별 재학생 분포
+      </h3>
+
+      <div class="space-y-3 text-xs">
+        <div class="space-y-1">
+          <div class="flex justify-between font-semibold">
+            <span>Grade 12 (시니어)</span>
+            <span>{{ stats.count_h12 }}명</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div class="bg-red-500 h-full rounded-full" style="width: {{ (stats.count_h12 / stats.total_students * 100)|round }}%"></div>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between font-semibold">
+            <span>Grade 11 (주니어)</span>
+            <span>{{ stats.count_h11 }}명</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div class="bg-blue-600 h-full rounded-full" style="width: {{ (stats.count_h11 / stats.total_students * 100)|round }}%"></div>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between font-semibold">
+            <span>Grade 10 (소포모어)</span>
+            <span>{{ stats.count_h10 }}명</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div class="bg-indigo-500 h-full rounded-full" style="width: {{ (stats.count_h10 / stats.total_students * 100)|round }}%"></div>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between font-semibold">
+            <span>Grade 9 (프레시맨)</span>
+            <span>{{ stats.count_h9 }}명</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div class="bg-purple-500 h-full rounded-full" style="width: {{ (stats.count_h9 / stats.total_students * 100)|round }}%"></div>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex justify-between font-semibold">
+            <span>Grade 8 (미들스쿨)</span>
+            <span>{{ stats.count_m8 }}명</span>
+          </div>
+          <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+            <div class="bg-emerald-500 h-full rounded-full" style="width: {{ (stats.count_m8 / stats.total_students * 100)|round }}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holistic Portfolio Readiness Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+      <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-amber-600">pie_chart</span>
+        Holistic 포트폴리오 준비도
+      </h3>
+
+      <div class="space-y-3 text-xs">
+        <div class="p-3 rounded-xl bg-slate-50 flex items-center justify-between">
+          <span>열정 프로젝트 활성도</span>
+          <span class="font-bold text-blue-700 font-mono">{{ stats.total_passion_projects }}건 진행</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 flex items-center justify-between">
+          <span>Google Drive 검증 증빙</span>
+          <span class="font-bold text-emerald-700 font-mono">{{ stats.total_ecs }}개 연결</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 flex items-center justify-between">
+          <span>누적 상담 세션 기록</span>
+          <span class="font-bold text-slate-800 font-mono">{{ stats.total_counselings }}회 진행</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admissions Strategy Goals Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+      <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-emerald-600">military_tech</span>
+        주요 지망 대학 군 (Target Tiers)
+      </h3>
+
+      <div class="space-y-2 text-xs">
+        <div class="flex items-center justify-between p-2 rounded-lg bg-blue-50 text-blue-900 font-medium">
+          <span>Tier 1: Ivy League & Top 15 (ED)</span>
+          <span class="font-bold">Johns Hopkins, Cornell, Northwestern</span>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded-lg bg-indigo-50 text-indigo-900 font-medium">
+          <span>Tier 2: Top 30 National Universities</span>
+          <span class="font-bold">NYU, Emory, UC Berkeley, UCLA</span>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-100 text-slate-800 font-medium">
+          <span>Tier 3: Specialized Art & STEM</span>
+          <span class="font-bold">RISD, Pratt, Purdue, UIUC</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
